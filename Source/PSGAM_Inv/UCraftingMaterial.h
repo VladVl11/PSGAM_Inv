@@ -15,7 +15,7 @@ class PSGAM_INV_API UUCraftingMaterial : public UUItemBase
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Material settings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material settings", meta = (ClampMin = "1"))
 	int32 Quantity;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Material settings", meta = (ClampMin = "1"))

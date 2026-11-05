@@ -15,7 +15,8 @@ enum class EInventoryType : uint8
 	Hotbar
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnInventoryUpdated, UUItemBase*, Item, int32, SlotIndex, EInventoryType, InventoryType);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnUsableItemPickedUp, UUUsableItem*, Item, int32, SlotIndex, EInventoryType, InventoryType);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCraftingMaterialPickedUp, UUCraftingMaterial*, Item,int32, Quantity, int32, SlotIndex);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PSGAM_INV_API UUInventoryComponent : public UActorComponent
@@ -27,17 +28,19 @@ public:
 	UUInventoryComponent();
 
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
-	FOnInventoryUpdated OnInventoryUpdated;
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
+	FOnUsableItemPickedUp OnUsableItemPickedUp;
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnCraftingMaterialPickedUp OnCraftingMaterialPickedUp;
+
+	void BeginPlay() override;
 
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable)
-	void AddItemToInventory(TSubclassOf<class UUItemBase> Item);
+	bool AddItemToInventory(TSubclassOf<class UUItemBase> Item);
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory", meta = (AllowPrivateAccess = "true"))

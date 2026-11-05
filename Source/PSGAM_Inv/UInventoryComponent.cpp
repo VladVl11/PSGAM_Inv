@@ -3,6 +3,7 @@
 
 #include "UInventoryComponent.h"
 #include "UUsableItem.h"
+#include "UCraftingMaterial.h"
 
 // Sets default values for this component's properties
 UUInventoryComponent::UUInventoryComponent()
@@ -29,29 +30,51 @@ void UUInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-void UUInventoryComponent::AddItemToInventory(TSubclassOf<UUItemBase> Item)
+bool UUInventoryComponent::AddItemToInventory(TSubclassOf<UUItemBase> Item)
 {
     if (!Item)
     {
-        return;
+        return false;
     }
 
 	if (Item->IsChildOf(UUUsableItem::StaticClass())) {
 		for(auto& Slot : HotbarItems) {
 			if (!Slot) {
-				Slot = NewObject<UUItemBase>(this, Item);
-				OnInventoryUpdated.Broadcast(Slot, &Slot - &HotbarItems[0], EInventoryType::Hotbar);
-				return;
+				auto* UsableItem = NewObject<UUUsableItem>(this, Item);
+				Slot = UsableItem;
+				OnUsableItemPickedUp.Broadcast(UsableItem, &Slot - &HotbarItems[0], EInventoryType::Hotbar);
+				return true;
 			}
 		}
+		for (auto& Slot : BackpackItems) {
+			if (!Slot) {
+				auto* UsableItem = NewObject<UUUsableItem>(this, Item);
+				Slot = UsableItem;
+				OnUsableItemPickedUp.Broadcast(UsableItem, &Slot - &BackpackItems[0], EInventoryType::Backpack);
+				return true;
+			}
+		}
+		return false; // No empty slot found in either Hotbar or Backpack
 	}
 
 	for(auto& Slot : BackpackItems) {
 		if (!Slot) {
-			Slot = NewObject<UUItemBase>(this, Item);
-			OnInventoryUpdated.Broadcast(Slot, &Slot - &BackpackItems[0], EInventoryType::Backpack);
-			return;
+			auto* CraftingMat = NewObject<UUCraftingMaterial>(this, Item);
+			Slot = CraftingMat;
+			OnCraftingMaterialPickedUp.Broadcast(CraftingMat, CraftingMat->Quantity, &Slot - &BackpackItems[0]);	
+			return true;
+		}
+		if(Slot->GetClass() == Item) {
+			// Assuming the item has a Quantity property
+			if (auto CraftingMat = Cast<UUCraftingMaterial>(Slot)) {
+				if (CraftingMat->Quantity < CraftingMat->MaxStackSize) {
+					CraftingMat->Quantity++;
+					OnCraftingMaterialPickedUp.Broadcast(Cast<UUCraftingMaterial>(Slot.Get()), CraftingMat->Quantity, &Slot - &BackpackItems[0]);
+					return true;
+				}
+			}
 		}
 	}
+	return false;
 }
 
